@@ -33,11 +33,12 @@ dependencies = [
     "pytz==2023.3",
     "pyarrow>=16,<20",
     "ipykernel>=7.2.0",
+    "ruff>=0.15.2",
 ]
 
 [project.optional-dependencies]
 arctic = ["arctic @ git+https://github.com/man-group/arctic.git"]
-dev = ["pytest>6.2", "black==23.11.0"]
+dev = ["pytest>6.2", "ruff>=0.8.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/pst-group/pysystemtrade"
@@ -87,7 +88,19 @@ testpaths = [
     "tests",
 ]
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ["py310"]
-required-version = "23.11.0"
+target-version = "py310"
+
+[tool.ruff.format]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E402",   # module-import-not-at-top-of-file (existing codebase pattern)
+    "E501",   # line-too-long (formatter handles what it can)
+    "E711",   # none-comparison (existing codebase pattern)
+    "E722",   # bare-except (existing codebase pattern)
+    "F403",   # undefined-local-with-import-star (being cleaned up incrementally)
+    "F405",   # undefined-local-with-import-star-usage
+]

@@ -1,5 +1,9 @@
 # Release notes
 
+## Version 1.8.2-fork.1
+
+- Replace Black formatter and flake8 linter with Ruff for both formatting and linting
+
 ## Version 1.8.2
 
 - new Commission Report highlights where values need to be updated

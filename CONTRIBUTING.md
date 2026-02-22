@@ -156,28 +156,32 @@ pytest --runslow
 ```
 
 
-## Lint / Black
+## Lint / Format (Ruff)
 
-This project keeps its code pretty with [Black](https://black.readthedocs.io/en/stable/). Black gets automatically run over any PRs, and the PR won't be merged if it fails. To clean your code submission manually you'll need Black installed, instructions [here](https://black.readthedocs.io/en/stable/getting_started.html). Then run:
-```
-black .
-```
+This project uses [Ruff](https://docs.astral.sh/ruff/) for both formatting and linting. Ruff gets automatically run over any PRs, and the PR won't be merged if it fails.
 
-If you have a virtual environment (venv), you will want to tell Black to ignore that. So if your venv is named `.venv`, the command would be:
-
+To format your code:
 ```
-black . --exclude '/.venv\/.+/'
+ruff format .
 ```
 
-Or, get your IDE or editor to automatically re-format files as you save. Configuration instructions [here](https://black.readthedocs.io/en/stable/integrations/editors.html)
+To run the linter:
+```
+ruff check .
+```
 
-Note for pycharm users: The blackd plugin requires a blackd daemon to be running; add it to your crontab.
+To auto-fix linting issues where possible:
+```
+ruff check --fix .
+```
 
-Or, configure your local git install to automatically check and fix your code as you commit. Configuration instructions [here](https://black.readthedocs.io/en/stable/integrations/source_version_control.html)
+Or, get your IDE or editor to automatically format and lint files as you save. Configuration instructions [here](https://docs.astral.sh/ruff/editors/).
 
-### Black version
+Or, configure your local git install to automatically check and fix your code as you commit via pre-commit hooks. See `.pre-commit-config.yaml` in the project root.
 
-Black needs to be consistent between the version running in the CI build and your local environment. To check the currently used version, see the `[tool.black]` section of the project [TOML file](https://github.com/pst-group/pysystemtrade/blob/develop/pyproject.toml)
+### Ruff configuration
+
+Ruff is configured in the `[tool.ruff]` section of the project [pyproject.toml](https://github.com/pst-group/pysystemtrade/blob/develop/pyproject.toml). It uses Black-compatible formatting (line-length 88, target Python 3.10).
 
 ## General code guidelines (INCOMPLETE)
 

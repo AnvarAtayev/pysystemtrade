@@ -124,7 +124,7 @@ Check what is installed, should look something like
 (.venv) % pip list
 Package           Version 
 ----------------- ----------- 
-black             23.11.0
+ruff              0.9.2
 blinker           1.8.2
 click             8.1.7
 contourpy         1.3.0
@@ -283,7 +283,7 @@ Check what is installed, should look something like
 (pysystemtrade) $ uv pip list
 Package           Version     Editable project location
 ----------------- ----------- ---------------------------------
-black             23.11.0
+ruff              0.9.2
 blinker           1.9.0
 click             8.1.8
 contourpy         1.3.1
