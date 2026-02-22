@@ -7,12 +7,11 @@ MOD_DIR = os.path.join(THIS_DIR, "..")
 
 
 @unittest.SkipTest
-def test_flake8():
+def test_ruff_lint():
     retcode = subprocess.call(
         [
-            "flake8",
-            "--ignore=E123,E125,E126,E128,E711",
-            "--exclude=__version__.py",
+            "ruff",
+            "check",
             MOD_DIR,
         ]
     )
