@@ -37,6 +37,8 @@ dependencies = [
     "pyarrow>=16,<20",
     "ipykernel>=7.2.0",
     "ruff>=0.15.2",
+    "yfinance>=1.2.0",
+    "cvxpy>=1.7.5",
 ]
 
 [project.optional-dependencies]

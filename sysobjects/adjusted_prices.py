@@ -1,63 +1,91 @@
 from copy import copy
+from typing import List, Tuple, Type, TypeVar
 
 import numpy as np
 import pandas as pd
 
 from syscore.pandas.full_merge_with_replacement import full_merge_of_existing_series
 from sysobjects.dict_of_named_futures_per_contract_prices import (
-    price_name,
     contract_name_from_column_name,
+    futuresNamedContractFinalPricesWithContractID,
+    price_name,
 )
 from sysobjects.multiple_prices import futuresMultiplePrices
 
+FuturesAdjustedPrices = TypeVar("FuturesAdjustedPrices", bound="futuresAdjustedPrices")
+
 
 class futuresAdjustedPrices(pd.Series):
-    """
-    adjusted price information
-    """
+    """Adjusted futures prices stored as a pandas series."""
 
-    def __init__(self, price_data):
+    def __init__(self, price_data: pd.Series) -> None:
+        """
+        Create adjusted prices from a pandas series.
+
+        Parameters
+        ----------
+        price_data : pd.Series
+            Adjusted price series indexed by timestamp.
+        """
         price_data.index.name = "index"  # arctic compatible
         super().__init__(price_data)
 
     @classmethod
-    def create_empty(futuresContractPrices):
+    def create_empty(cls: Type[FuturesAdjustedPrices]) -> FuturesAdjustedPrices:
         """
-        Our graceful fail is to return an empty, but valid, dataframe
+        Return an empty adjusted-price series.
+
+        Returns
+        -------
+        futuresAdjustedPrices
+            Empty series with ``float64`` dtype.
         """
 
-        futures_contract_prices = futuresContractPrices(pd.Series(dtype="float64"))
+        futures_contract_prices = cls(pd.Series(dtype="float64"))
 
         return futures_contract_prices
 
     @classmethod
     def stitch_multiple_prices(
-        futuresAdjustedPrices,
+        cls: Type[FuturesAdjustedPrices],
         multiple_prices: futuresMultiplePrices,
         forward_fill: bool = False,
-    ):
+    ) -> FuturesAdjustedPrices:
         """
-        Do backstitching of multiple prices using panama method
+        Stitch multiple-price data into a continuous adjusted series.
 
-        If you want to change then override this method
+        Parameters
+        ----------
+        multiple_prices : futuresMultiplePrices
+            Multiple-price data to stitch.
+        forward_fill : bool, default False
+            If ``True``, forward-fill prices and forward values before stitching.
 
-        :param multiple_prices: multiple prices object
-        :param forward_fill: forward fill prices and forwards before stitching
-
-        :return: futuresAdjustedPrices
+        Returns
+        -------
+        futuresAdjustedPrices
+            Continuous adjusted price series produced with Panama stitching.
 
         """
         adjusted_prices = _panama_stitch(multiple_prices, forward_fill)
-        return futuresAdjustedPrices(adjusted_prices)
+        return cls(adjusted_prices)
 
     def update_with_multiple_prices_no_roll(
         self, updated_multiple_prices: futuresMultiplePrices
-    ):
+    ) -> "futuresAdjustedPrices":
         """
-        Update adjusted prices assuming no roll has happened
+        Update adjusted prices when the front contract has not rolled.
 
-        :param updated_multiple_prices: futuresMultiplePrices
-        :return: updated adjusted prices
+        Parameters
+        ----------
+        updated_multiple_prices : futuresMultiplePrices
+            Latest multiple-price data to merge into the adjusted series.
+
+        Returns
+        -------
+        futuresAdjustedPrices
+            Updated adjusted prices. Returns an empty adjusted-price series if a
+            roll is detected.
         """
 
         updated_adj = _update_adjusted_prices_from_multiple_no_roll(
@@ -67,14 +95,25 @@ class futuresAdjustedPrices(pd.Series):
         return updated_adj
 
 
+# TODO: Add multiple adjustment methods
+# TODO: Speed up current adjustment logic
 def _panama_stitch(
     multiple_prices_input: futuresMultiplePrices, forward_fill: bool = False
 ) -> pd.Series:
     """
-    Do a panama stitch for adjusted prices
+    Stitch adjusted prices with the Panama method.
 
-    :param multiple_prices:  futuresMultiplePrices
-    :return: pd.Series of adjusted prices
+    Parameters
+    ----------
+    multiple_prices_input : futuresMultiplePrices
+        Multiple-price data ordered by timestamp.
+    forward_fill : bool, default False
+        If ``True``, forward-fill prices and forward values before stitching.
+
+    Returns
+    -------
+    pd.Series
+        Adjusted prices indexed like ``multiple_prices_input``.
     """
     multiple_prices = copy(multiple_prices_input)
     if forward_fill:
@@ -108,7 +147,28 @@ def _panama_stitch(
     return adjusted_prices
 
 
-def _roll_in_panama(adjusted_prices_values, previous_row, current_row):
+def _roll_in_panama(
+    adjusted_prices_values: List[float],
+    previous_row: pd.Series,
+    current_row: pd.Series,
+) -> List[float]:
+    """
+    Apply a Panama roll adjustment and append the new contract price.
+
+    Parameters
+    ----------
+    adjusted_prices_values : list[float]
+        Adjusted prices accumulated so far.
+    previous_row : pd.Series
+        Final row before the roll.
+    current_row : pd.Series
+        First row after the roll.
+
+    Returns
+    -------
+    list[float]
+        Updated adjusted prices including the roll adjustment.
+    """
     # This is the sort of code you will need to change to adjust the roll logic
     # The roll differential is from the previous_row
     roll_differential = previous_row.FORWARD - previous_row.PRICE
@@ -135,7 +195,9 @@ def _roll_in_panama(adjusted_prices_values, previous_row, current_row):
     return adjusted_prices_values
 
 
-no_update_roll_has_occurred = futuresAdjustedPrices.create_empty()
+no_update_roll_has_occurred: futuresAdjustedPrices = (
+    futuresAdjustedPrices.create_empty()
+)
 
 
 def _update_adjusted_prices_from_multiple_no_roll(
@@ -143,11 +205,20 @@ def _update_adjusted_prices_from_multiple_no_roll(
     updated_multiple_prices: futuresMultiplePrices,
 ) -> futuresAdjustedPrices:
     """
-    Update adjusted prices assuming no roll has happened
+    Update adjusted prices using new multiple-price data without a roll.
 
-    :param existing_adjusted_prices: futuresAdjustedPrices
-    :param updated_multiple_prices: futuresMultiplePrices
-    :return: updated adjusted prices
+    Parameters
+    ----------
+    existing_adjusted_prices : futuresAdjustedPrices
+        Existing adjusted-price history.
+    updated_multiple_prices : futuresMultiplePrices
+        Latest multiple-price data to merge.
+
+    Returns
+    -------
+    futuresAdjustedPrices
+        Updated adjusted prices. Returns an empty adjusted-price series if the
+        input implies a roll.
     """
     new_multiple_price_data, last_contract_in_price_data = _calc_new_multiple_prices(
         existing_adjusted_prices, updated_multiple_prices
@@ -174,7 +245,23 @@ def _update_adjusted_prices_from_multiple_no_roll(
 def _calc_new_multiple_prices(
     existing_adjusted_prices: futuresAdjustedPrices,
     updated_multiple_prices: futuresMultiplePrices,
-) -> (futuresMultiplePrices, str):
+) -> Tuple[futuresNamedContractFinalPricesWithContractID, str]:
+    """
+    Extract new price rows and the latest known price contract.
+
+    Parameters
+    ----------
+    existing_adjusted_prices : futuresAdjustedPrices
+        Existing adjusted-price history.
+    updated_multiple_prices : futuresMultiplePrices
+        Latest multiple-price data.
+
+    Returns
+    -------
+    tuple[futuresNamedContractFinalPricesWithContractID, str]
+        Price rows after the last adjusted timestamp and the contract ID in use
+        at that timestamp.
+    """
     last_date_in_current_adj = existing_adjusted_prices.index[-1]
     multiple_prices_as_dict = updated_multiple_prices.as_dict()
 
